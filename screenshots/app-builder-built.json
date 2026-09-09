@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Umbral",
+      "hasCanvas": true,
+      "bodyTextLen": 1997,
+      "bodyTextHash": "fcd7c14e7360da46e675fac2cf636cf1a81e36f87d816ddb199db6d83e12cb4c",
+      "bodyTextPrefix": "BUS DE CONTROL Umbral ES EN Si rellenas el hueco, cierra. Resérv",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Umbral",
+      "hasCanvas": true,
+      "bodyTextLen": 1997,
+      "bodyTextHash": "6679efbc6b5ace71c2073e5d28b3614d2193b8f9d6d2df5996071a9c273e4418",
+      "bodyTextPrefix": "BUS DE CONTROL Umbral ES EN Si rellenas el hueco, cierra. Resérv",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}
