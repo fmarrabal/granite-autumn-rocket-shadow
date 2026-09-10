@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Ban, Copy as CopyIcon, Play, RotateCcw } from "lucide-react";
 import { LiveSlice } from "@/components/lab/slice-map";
+import { SituationPanel } from "@/components/lab/situation-model";
+import { BankPanel } from "@/components/lab/bank-panel";
 import {
   CLOSE_BLOCK,
   FEAR_BLOCK,
@@ -117,7 +119,7 @@ export function LabApp() {
     const s = copy.tour[nextTour];
     if (s?.chip === prompt && (!s.chipLabel || s.chipLabel === label)) nextTour += 1;
     if (nextTour !== tour) setTour(nextTour);
-    const el = document.getElementById("permiso");
+    const el = document.getElementById("modelo");
     if (el && window.matchMedia("(max-width: 1023px)").matches) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -152,6 +154,7 @@ export function LabApp() {
   const tourStep = copy.tour[tour];
   const duda = turn ? copy.dudaWord[turn.dudaLabel] ?? turn.dudaLabel : "—";
   const tag = turn ? copy.tagWord[turn.tag] ?? turn.tag : "";
+  const cog = turn?.cog ?? agent.mind.snapshot();
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground">
@@ -159,7 +162,7 @@ export function LabApp() {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase">{copy.controlBus}</p>
-            <h1 className="mt-2 font-display text-3xl font-medium tracking-tight sm:text-4xl">Umbral</h1>
+            <h1 className="mt-2 font-display text-3xl font-medium tracking-tight sm:text-4xl">Umbral-C</h1>
           </div>
           <div role="radiogroup" aria-label={copy.langLabel} className="flex shrink-0 rounded-full border border-border p-1">
             {(["es", "en"] as const).map((code) => (
@@ -251,7 +254,10 @@ export function LabApp() {
           <p className="mt-2 text-xs text-muted-foreground">{copy.runHint}</p>
         </section>
 
-        <section id="permiso" className="rounded-[var(--radius-xl)] border border-border bg-card p-4 sm:p-5 lg:col-start-2 lg:row-span-3 lg:self-start lg:sticky lg:top-4">
+        <aside className="flex flex-col gap-6 lg:col-start-2 lg:row-span-4 lg:self-start lg:sticky lg:top-4">
+        <SituationPanel copy={copy} cog={cog} hasTurn={!!turn} />
+
+        <section id="permiso" className="rounded-[var(--radius-xl)] border border-border bg-card p-4 sm:p-5">
           <h2 className="font-display text-lg">{copy.permiso}</h2>
           {turn && (
             <p className="mt-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
@@ -295,27 +301,32 @@ export function LabApp() {
               {copy.controlTag} · <span className="text-foreground">{tag}</span>
             </p>
           )}
-          <div className="mt-5 space-y-3">
-            <Meter label={copy.meterD} value={turn?.d ?? 0} extra={duda + (turn && Math.abs(turn.attr) > 0.004 ? ` · Δ ${turn.attr >= 0 ? "+" : ""}${turn.attr.toFixed(3)}` : "")} tone={meterColor(turn?.d ?? 0)} />
-            <Meter label={copy.meterR} value={turn?.r ?? 0} extra={`${copy.blocks} ${RISK_BLOCK}`} tone={meterColor(turn?.r ?? 0)} />
-            <Meter label={copy.meterF} value={turn?.f ?? 0} extra={`≥ ${FEAR_BLOCK}`} tone={meterColor(turn?.f ?? 0)} />
-            <Meter label={copy.meterFr} value={turn?.fr ?? 0} extra={`≥ ${FRUST_BLOCK}`} tone={meterColor(turn?.fr ?? 0)} />
-            <Meter label={copy.meterIra} value={turn?.ira ?? 0} extra={`≥ ${IRA_BLOCK}`} tone={meterColor(turn?.ira ?? 0)} />
-            <div className="mt-3 flex justify-between font-mono text-xs text-muted-foreground">
-              <span>d_base {turn ? turn.dBase.toFixed(3) : "—"}</span>
-              <span>Δ {turn ? `${turn.attr >= 0 ? "+" : ""}${turn.attr.toFixed(3)}` : "—"}</span>
+          <details className="mt-4 rounded-[var(--radius-md)] border border-border bg-background px-3 py-2" open={Boolean(turn?.blockedBy)}>
+            <summary className="min-h-11 cursor-pointer font-mono text-xs uppercase tracking-wider text-muted-foreground">
+              {copy.gatesTitle}
+            </summary>
+            <div className="space-y-3 pb-2">
+              <Meter label={copy.meterD} value={turn?.d ?? 0} extra={duda + (turn && Math.abs(turn.attr) > 0.004 ? ` · Δ ${turn.attr >= 0 ? "+" : ""}${turn.attr.toFixed(3)}` : "")} tone={meterColor(turn?.d ?? 0)} />
+              <Meter label={copy.meterR} value={turn?.r ?? 0} extra={`${copy.blocks} ${RISK_BLOCK}`} tone={meterColor(turn?.r ?? 0)} />
+              <Meter label={copy.meterF} value={turn?.f ?? 0} extra={`≥ ${FEAR_BLOCK}`} tone={meterColor(turn?.f ?? 0)} />
+              <Meter label={copy.meterFr} value={turn?.fr ?? 0} extra={`≥ ${FRUST_BLOCK}`} tone={meterColor(turn?.fr ?? 0)} />
+              <Meter label={copy.meterIra} value={turn?.ira ?? 0} extra={`≥ ${IRA_BLOCK}`} tone={meterColor(turn?.ira ?? 0)} />
+              <div className="mt-3 flex justify-between font-mono text-xs text-muted-foreground">
+                <span>d_base {turn ? turn.dBase.toFixed(3) : "—"}</span>
+                <span>Δ {turn ? `${turn.attr >= 0 ? "+" : ""}${turn.attr.toFixed(3)}` : "—"}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 font-mono text-xs text-muted-foreground">
+                <span>eco {turn ? turn.cost.toFixed(2) : "—"}</span>
+                <span>win {turn ? turn.windowEnergy.toFixed(3) : "—"}</span>
+                <span>
+                  {copy.climate} {turn ? turn.climate.toFixed(2) : "—"}
+                </span>
+                <span>stakes {turn ? turn.stakes.toFixed(2) : "—"}</span>
+                <span>h {turn ? turn.h.toFixed(2) : "—"}</span>
+                <span>{copy.mute}</span>
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-2 font-mono text-xs text-muted-foreground">
-              <span>eco {turn ? turn.cost.toFixed(2) : "—"}</span>
-              <span>win {turn ? turn.windowEnergy.toFixed(3) : "—"}</span>
-              <span>
-                {copy.climate} {turn ? turn.climate.toFixed(2) : "—"}
-              </span>
-              <span>stakes {turn ? turn.stakes.toFixed(2) : "—"}</span>
-              <span>h {turn ? turn.h.toFixed(2) : "—"}</span>
-              <span>{copy.mute}</span>
-            </div>
-          </div>
+          </details>
           {turn && turn.permiso !== "cerrar" && (turn.d >= CLOSE_BLOCK || turn.r >= RISK_BLOCK || turn.f >= FEAR_BLOCK || turn.fr >= FRUST_BLOCK || turn.ira >= IRA_BLOCK) && (
             <p className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
               <Ban className="mt-0.5 size-4 shrink-0" />
@@ -330,6 +341,7 @@ export function LabApp() {
             </details>
           )}
         </section>
+        </aside>
 
         <section className="rounded-[var(--radius-xl)] border border-border bg-card p-4 sm:p-5 lg:col-start-1">
           <details className="rounded-[var(--radius-md)] border border-border bg-background px-3 py-1">
@@ -432,6 +444,8 @@ export function LabApp() {
             className="mt-1 h-11 w-24 rounded-[var(--radius-md)] border border-border bg-background px-3"
           />
         </section>
+
+        <BankPanel copy={copy} />
       </div>
     </div>
   );

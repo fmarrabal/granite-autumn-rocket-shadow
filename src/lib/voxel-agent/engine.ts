@@ -1,5 +1,8 @@
 /** Control bus. Authorization, not a persona. 3×3 window is the actual readout. */
 
+import { CognitiveKernel, type CognitiveSnap } from "./cognition.ts";
+import { runBank } from "./bank.ts";
+
 export const TYPES = [
   "consigna_vaga",
   "dato_faltante",
@@ -112,7 +115,7 @@ const TARGET: Record<SituationType, InputName> = {
 const MATH_RE = /\d+\s*[+\-*/x×]\s*\d+/;
 const DATE_RE = /(lunes|martes|miercoles|jueves|viernes|sabado|domingo|hoy|manana|\d{1,2}[/-]\d{1,2})/;
 const CARE_RE = /(medico|salud|dolor|grave)/;
-const VAGUE = ["mejor", "better", "hazlo", "improve", "optimo", "genial"];
+const VAGUE = ["mejor", "better", "hazlo", "improve", "optimo", "genial", "fino", "fine", "pulido", "pulir", "color", "dejalo", "deja", "refina", "refinar"];
 const RESERVE = ["reserv", "book", "vuelo", "hotel", "cita", "agenda", "mesa"];
 const SEND = ["envia", "manda", "send"];
 const PAIRS: [string, string][] = [
@@ -367,6 +370,7 @@ export type TurnResult = {
   tag: string;
   blockedBy: GateHit | null;
   also: string[];
+  cog: CognitiveSnap;
 };
 
 export function turnTape(r: TurnResult) {
@@ -387,6 +391,14 @@ export function turnTape(r: TurnResult) {
     attr: +r.attr.toFixed(3),
     eco: +r.cost.toFixed(3),
     window_e: +r.windowEnergy.toFixed(4),
+    tipo: r.cog.tipo,
+    prediction: r.cog.prediction,
+    prediction_ok: r.cog.prediction_ok,
+    error: r.cog.error,
+    workspace: r.cog.workspace_mode,
+    hypotheses: r.cog.alive,
+    killed: r.cog.killed,
+    cites: r.cog.cites_commitment,
   };
 }
 
@@ -438,6 +450,7 @@ export class VoxelAgent {
   rejN: Record<SituationType, number>;
   episodes: Episode[] = [];
   pending: Episode | null = null;
+  mind = new CognitiveKernel();
   rng: Rng;
   gamma = 0.18;
   alpha = 0.22;
@@ -940,6 +953,8 @@ export class VoxelAgent {
 
   step(text: string): TurnResult {
     if (text.length > 4000) text = text.slice(0, 4000);
+    const cog = this.mind.step(text);
+    this.injectChladni(cog.workspace_mode);
     let src: Float64Array;
     if (this.chladniMode) {
       src = new Float64Array(this.chladniMode.length);
@@ -960,8 +975,8 @@ export class VoxelAgent {
     const fuzzyBase = this.infer(featsBase, this.mix(piBase));
     const dBase = fuzzyBase.d;
     const { eco, harm, pena, delta } = this.retrieve(text, piBase);
-    const missing = missingSlots(text);
-    const gapOpen = missing.length > 0 || pairState(fold(text)).conflict;
+    let missing = missingSlots(text);
+    const gapOpen = missing.length > 0 || pairState(fold(text)).conflict || cog.override;
     const ecoUsed = gapOpen ? eco : Math.min(eco, 0.12);
     const feats = this.extractExterior(text, ecoUsed, ff);
     feats.eco_mnesico = ecoUsed;
@@ -982,10 +997,31 @@ export class VoxelAgent {
     for (const t of TYPES) nRej += pi[t] * this.rejN[t];
     const ira = iraValue(stakes, feats.incoherencia, nRej, fr);
     const auth = this.authorize(fuzzy.d, fuzzy.permiso, rMem, f, fr, ira);
-    const dMem = auth.d;
+    let dMem = auth.d;
+    let permiso = auth.permiso;
+    let blockedBy = auth.blockedBy;
+    let also = auth.also.map((g) => g.id);
+    if (cog.override) {
+      const forced = this.authorize(dMem, cog.permiso, rMem, f, fr, ira);
+      dMem = forced.d;
+      permiso = forced.permiso;
+      blockedBy = forced.blockedBy;
+      also = forced.also.map((g) => g.id);
+      if (cog.open_slots.length) missing = cog.open_slots;
+    } else if (cog.permiso === "cerrar" && fuzzy.permiso === "cerrar") {
+      permiso = "cerrar";
+      blockedBy = null;
+      also = [];
+    }
     const attr = dMem - dBase;
-    const question = questionFor(text, missing, auth.permiso, eco, attr);
-    const response = auth.permiso === "cerrar" ? closeReply(text) : question;
+    let question = questionFor(text, missing, permiso, eco, attr);
+    if (cog.override && cog.question) {
+      question = cog.question;
+      if (eco >= 0.2 && cog.cites_commitment) {
+        question = question.replace("Compromiso activo", `Compromiso activo (eco ${eco.toFixed(2)})`);
+      }
+    }
+    const response = permiso === "cerrar" ? closeReply(text) : question;
     this.pending = {
       text,
       tokens: tokens(text),
@@ -994,7 +1030,7 @@ export class VoxelAgent {
       b_used: bNow,
       d: dMem,
       d_base: dBase,
-      permiso: auth.permiso,
+      permiso,
       d_star: null,
       outcome: "pending",
       timestamp: Date.now(),
@@ -1006,7 +1042,7 @@ export class VoxelAgent {
       dBase,
       dMem,
       attr,
-      permiso: auth.permiso,
+      permiso,
       dudaLabel: fuzzy.label,
       pi,
       bNow,
@@ -1036,8 +1072,9 @@ export class VoxelAgent {
       pn: pena,
       nRej,
       tag: controlTag(dMem, rMem, f, fr, ira, pena),
-      blockedBy: auth.blockedBy,
-      also: auth.also.map((g) => g.id),
+      blockedBy,
+      also,
+      cog,
     };
   }
 
@@ -1251,6 +1288,60 @@ export function runEval(): EvalCheck[] {
     name: "Wrap neighbors at the cube edge",
     ok: a.energyAt(0, 0, -1) === a.energyAt(0, 0, 15) && a.energyAt(-1, 0, 0) === a.energyAt(15, 0, 0) && wrapHit.permiso === "cerrar",
     detail: `x-1=${a.energyAt(0, 0, -1).toFixed(4)} x15=${a.energyAt(0, 0, 15).toFixed(4)}`,
+  });
+  a = new VoxelAgent({ liveBody: false, seed: 1 });
+  const vagueH = a.step("hazlo mejor");
+  checks.push({
+    name: "Vague opens criterion hypothesis in Capas workspace",
+    ok:
+      vagueH.permiso === "preguntar" &&
+      vagueH.cog.alive.includes("falta_criterio") &&
+      vagueH.cog.prediction === "criterio" &&
+      vagueH.cog.workspace_mode === "rings",
+    detail: `perm=${vagueH.permiso} alive=${vagueH.cog.alive.join(",")} pred=${vagueH.cog.prediction} mode=${vagueH.cog.workspace_mode}`,
+  });
+  const wrongSlot = a.step("el viernes");
+  checks.push({
+    name: "Wrong slot kills hypothesis and still asks criterion",
+    ok:
+      wrongSlot.cog.prediction_ok === false &&
+      wrongSlot.cog.killed.includes("falta_criterio") &&
+      wrongSlot.permiso === "preguntar" &&
+      wrongSlot.cog.prediction === "criterio" &&
+      !a.mind.slots.fecha,
+    detail: `ok=${wrongSlot.cog.prediction_ok} killed=${wrongSlot.cog.killed.join(",")} pred=${wrongSlot.cog.prediction} fecha=${a.mind.slots.fecha}`,
+  });
+  const metric = a.step("el criterio es NPS > 50");
+  checks.push({
+    name: "Metric confirms and writes a commitment",
+    ok: metric.permiso === "cerrar" && a.mind.commitments.some((c) => /50/.test(c.last_value)),
+    detail: `perm=${metric.permiso} commits=${a.mind.commitments.map((c) => c.last_value).join("|")}`,
+  });
+  const fine = a.step("dejalo fino");
+  checks.push({
+    name: "New wording reuses commitment without 'mejor'",
+    ok: fine.permiso === "preguntar" && fine.cog.cites_commitment && /nps/i.test(fine.question),
+    detail: `perm=${fine.permiso} cites=${fine.cog.cites_commitment} q=${fine.question.slice(0, 80)}`,
+  });
+  a = new VoxelAgent({ liveBody: false, seed: 4 });
+  const clash = a.step("quiero barato y lujo");
+  checks.push({
+    name: "Conflict occupies Cruz workspace",
+    ok: clash.cog.workspace_mode === "cross" && clash.cog.alive.includes("par_abierto"),
+    detail: `mode=${clash.cog.workspace_mode} alive=${clash.cog.alive.join(",")}`,
+  });
+  const bank = runBank();
+  const umbral = bank.table.find((r) => r.id === "umbral");
+  checks.push({
+    name: "Control bank: Umbral-C full score against rival policies",
+    ok: !!umbral && umbral.ok === umbral.n && umbral.n >= 40,
+    detail: `umbral=${umbral?.ok}/${umbral?.n} first=${bank.table[0]?.id}`,
+  });
+  const friday = bank.cases.find((c) => c.id === "wrong_slot");
+  checks.push({
+    name: "Control bank: only Umbral-C survives Friday after better",
+    ok: !!friday && friday.agents.umbral.pass && !friday.agents.thermo.pass && !friday.agents.helper.pass,
+    detail: `umbral=${friday?.agents.umbral.pass} thermo=${friday?.agents.thermo.pass}`,
   });
   return checks;
 }

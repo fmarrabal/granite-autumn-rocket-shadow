@@ -3,7 +3,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "Umbral";
+const APP_NAME = "Umbral-C";
 
 export const Route = createRootRoute({
   head: () => ({

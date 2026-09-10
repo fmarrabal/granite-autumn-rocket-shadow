@@ -362,6 +362,12 @@ export function LiveSlice({
   }, [epoch]);
 
   useEffect(() => {
+    const id = turn?.cog.workspace_mode;
+    if (!id) return;
+    setMode(id);
+  }, [turn]);
+
+  useEffect(() => {
     let id = 0;
     const tick = () => {
       const a = agentRef.current;
@@ -417,7 +423,12 @@ export function LiveSlice({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-lg">{copy.fieldTitle}</h2>
+        <div className="min-w-0">
+          <h2 className="font-display text-lg">{copy.fieldTitle}</h2>
+          <p className="mt-1 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+            {copy.workspaceOf(copy.modeWord[turn?.cog.workspace_mode ?? mode])}
+          </p>
+        </div>
         <div className="flex flex-wrap gap-2">
             {CHLADNI_IDS.map((id) => (
               <button

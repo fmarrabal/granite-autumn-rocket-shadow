@@ -97,6 +97,41 @@ export type Copy = {
   couplingDrag: string;
   couplingBus: string;
   couplingManda: string;
+  modelTitle: string;
+  modelHint: string;
+  slotCriterio: string;
+  slotFecha: string;
+  slotRest: string;
+  commitment: string;
+  hypotheses: string;
+  predictionLab: string;
+  noPrediction: string;
+  cycleTitle: string;
+  beatPercept: string;
+  beatPredict: string;
+  beatMismatch: string;
+  beatAct: string;
+  slotEmpty: string;
+  hypAlive: string;
+  hypDead: string;
+  commitEmpty: string;
+  tipoLab: string;
+  gatesTitle: string;
+  workspaceOf: (mode: string) => string;
+  hypClaim: Record<string, string>;
+  bankTitle: string;
+  bankHint: string;
+  bankRun: string;
+  bankScore: string;
+  bankPolicy: string;
+  bankHits: string;
+  bankCaps: string;
+  bankCases: string;
+  bankFriday: string;
+  bankNotThis: string;
+  bankAgent: Record<string, { name: string; family: string }>;
+  bankCap: Record<string, string>;
+  bankCase: Record<string, { title: string; why: string }>;
   advanced: string;
   samples: { label: string; text: string }[];
   tour: TourStep[];
@@ -106,37 +141,35 @@ export type Copy = {
 };
 
 const TOUR_ES: TourStep[] = [
-  { do: "Pulsa el chip 2 + 2", see: "Permiso: cerrar. Nadie bloqueó.", chip: "cuanto es 2+2" },
-  { do: "Pulsa Copiar turno", see: "blocked_by es null.", copy: true },
-  { do: "Pulsa Hazlo mejor", see: "preguntar. Bloqueó: d. Pide un criterio.", chip: "hazlo mejor", chipLabel: "Hazlo mejor" },
-  { do: "Pulsa Grabar corrección", see: "El tipo consigna_vaga se mueve.", record: "corrected" },
-  { do: "Pulsa Hazlo mejor otra vez", see: "El texto nombra el eco. Δ es positivo.", chip: "hazlo mejor", chipLabel: "Hazlo mejor otra vez" },
-  { do: "Pulsa NPS > 50", see: "Cerrar. El criterio llena el hueco aunque siga la palabra 'mejor'.", chip: "hazlo mejor, el criterio es NPS > 50" },
-  { do: "Pulsa Resérvalo", see: "Bloqueó: r. Falta la fecha. El exceso de riesgo manda, no d.", chip: "reservalo" },
-  { do: "Pulsa Viernes", see: "Cierra. El hueco de fecha se llenó.", chip: "reservalo el viernes" },
-  { do: "Pulsa Barato y lujo", see: "Bloqueó: fr. Más exceso que d; d e ira también cruzan.", chip: "quiero barato y lujo" },
+  { do: "Pulsa Hazlo mejor", see: "Hipótesis viva: falta un criterio. Predice una métrica. Workspace Capas.", chip: "hazlo mejor", chipLabel: "Hazlo mejor" },
+  { do: "Pulsa El viernes", see: "La predicción muere. No rellena fecha. Sigue pidiendo criterio.", chip: "el viernes", chipLabel: "El viernes" },
+  { do: "Pulsa NPS > 50", see: "Cierra y escribe el compromiso estructural.", chip: "el criterio es NPS > 50" },
+  { do: "Pulsa Déjalo fino", see: "Otras palabras, mismo compromiso. No hace falta 'mejor'.", chip: "dejalo fino" },
+  { do: "Pulsa el chip 2 + 2", see: "Cálculo residual. Permiso: cerrar. Nadie bloqueó.", chip: "cuanto es 2+2" },
+  { do: "Pulsa Copiar turno", see: "La cinta lleva tipo, predicción e hipótesis.", copy: true },
+  { do: "Pulsa Resérvalo", see: "Falta la fecha. Workspace Rejilla. Bloqueó: r.", chip: "reservalo" },
+  { do: "Pulsa Viernes reserva", see: "Cierra. El hueco de fecha se llenó.", chip: "reservalo el viernes" },
+  { do: "Pulsa Barato y lujo", see: "Workspace Cruz. Hipótesis par_abierto. Bloqueó: fr.", chip: "quiero barato y lujo" },
   { do: "Pulsa Elige barato", see: "Cerrar. Negar lujo resuelve el par.", chip: "barato. el lujo no. prioriza precio" },
-  { do: "Pulsa Capas", see: "Arena en los nodos, como Chladni. xz e yz no copian el plano: el modo llena el cubo.", pulse: true },
 ];
 
 const TOUR_EN: TourStep[] = [
-  { do: "Press 2 + 2", see: "Permission: close. No gate blocked.", chip: "cuanto es 2+2" },
-  { do: "Press Copy turn", see: "blocked_by is null.", copy: true },
-  { do: "Press Make it better", see: "ask. Blocked by: d. It wants a criterion.", chip: "hazlo mejor", chipLabel: "Make it better" },
-  { do: "Press Record correction", see: "The vague-prompt type moves.", record: "corrected" },
-  { do: "Press Make it better again", see: "The reply names the echo. Δ is positive.", chip: "hazlo mejor", chipLabel: "Make it better again" },
-  { do: "Press NPS > 50", see: "Close. The criterion fills the gap even though 'better' stays.", chip: "hazlo mejor, el criterio es NPS > 50" },
-  { do: "Press Book it", see: "Blocked by: r. Date missing. Risk excess commands, not d.", chip: "reservalo" },
-  { do: "Press Friday", see: "Closes. The date gap filled.", chip: "reservalo el viernes" },
-  { do: "Press Cheap and luxury", see: "Blocked by: fr. More excess than d; d and ira also cross.", chip: "quiero barato y lujo" },
+  { do: "Press Make it better", see: "Live hypothesis: a criterion is missing. Predicts a metric. Shells workspace.", chip: "hazlo mejor", chipLabel: "Make it better" },
+  { do: "Press Friday", see: "The prediction dies. Date is not filled. Still asks for a criterion.", chip: "el viernes", chipLabel: "Friday" },
+  { do: "Press NPS > 50", see: "Closes and writes the structural commitment.", chip: "el criterio es NPS > 50" },
+  { do: "Press Make it fine", see: "New wording, same commitment. Does not need 'better'.", chip: "dejalo fino" },
+  { do: "Press 2 + 2", see: "Residual calc. Permission: close. No gate blocked.", chip: "cuanto es 2+2" },
+  { do: "Press Copy turn", see: "The tape carries type, prediction and hypotheses.", copy: true },
+  { do: "Press Book it", see: "Date missing. Grid workspace. Blocked by: r.", chip: "reservalo" },
+  { do: "Press Friday booking", see: "Closes. The date gap filled.", chip: "reservalo el viernes" },
+  { do: "Press Cheap and luxury", see: "Cross workspace. Open-pair hypothesis. Blocked by: fr.", chip: "quiero barato y lujo" },
   { do: "Press Choose cheap", see: "Close. Denying luxury resolves the pair.", chip: "barato. el lujo no. prioriza precio" },
-  { do: "Press Shells", see: "Sand on the nodes, like Chladni. xz and yz are not the same plate: the mode fills the cube.", pulse: true },
 ];
 
 export const COPY: Record<Locale, Copy> = {
   es: {
-    controlBus: "Bus de control",
-    lede: "Si rellenas el hueco, cierra. Resérvalo manda r; Barato y lujo manda fr. Las 9 neuronas muestran su promedio. No es una persona.",
+    controlBus: "Ciclo cognitivo",
+    lede: "Modelo de situación, predicción que puede morir, compromiso que sobrevive a las palabras. El cubo es el workspace de la hipótesis viva. No es una mente.",
     langLabel: "Idioma",
     consigna: "Consigna",
     placeholder: "Escribe o pulsa un chip. Los chips ya corren.",
@@ -176,25 +209,25 @@ export const COPY: Record<Locale, Copy> = {
     thisPrompt: "Esta consigna",
     sessionLog: "Turnos de esta sesión",
     tape: "Cinta del turno",
-    tapeHint: "JSON compacto: permiso, puerta por exceso, d/r/f/fr/ira. Sin el cubo 16³.",
+    tapeHint: "JSON compacto: tipo, predicción, hipótesis, permiso, puerta por exceso. Sin el cubo 16³.",
     eval: "Eval",
-    evalHint: "Incluye hueco que se llena, r por exceso, 3×3, pulso ±z, Chladni 3D y consigna vacía.",
+    evalHint: "Incluye hipótesis, predicción fallida, compromiso con otras palabras, r por exceso y Chladni 3D.",
     runChecks: "Correr pruebas",
     pass: "pasa",
     fail: "falla",
     memory: "Memoria",
-    memoryHint: (n) => `${n} episodios. Recupera n-gram.`,
+    memoryHint: (n) => `${n} episodios y ${n ? "compromisos estructurales" : "sin compromisos"}.`,
     memoryEmpty: "Vacía hasta que grabes un resultado.",
     seed: "Semilla",
-    idleNote: "Pulsa el chip 2 + 2. Ya corre.",
+    idleNote: "Pulsa Hazlo mejor, luego El viernes. Un termostato no pasa ese paso.",
     rebuilt: "Campo nuevo.",
     censored: "Censurado: preguntaste, no viste el cierre.",
     corrected: "Corrección guardada.",
     observed: "Cierre observado.",
     memoryPushed: (eco, attr) => `Memoria: eco ${eco.toFixed(2)} · Δ ${attr >= 0 ? "+" : ""}${attr.toFixed(3)}.`,
     done: "Listo.",
-    fieldTitle: "Campo 16³",
-    fieldHint: "Chladni en 16³. La arena se queda donde el cubo no vibra (nodos). xy es un plano; xz e yz demuestran que el modo es 3D.",
+    fieldTitle: "Workspace de la hipótesis",
+    fieldHint: "El cubo no es decoración: el modo Chladni es el workspace de la hipótesis viva. Arena en los nodos.",
     midPlane: "Plano medio z=8 · ventana 3×3",
     volume: "Capas vecinas · z 6 a 10",
     energyMean: "Energía media",
@@ -228,14 +261,88 @@ export const COPY: Record<Locale, Copy> = {
     couplingDrag: "Un chip enciende las 9. El palito en cada barra es el umbral.",
     couplingBus: "bus · difusión",
     couplingManda: "manda",
+    modelTitle: "Modelo de situación",
+    modelHint: "Slots, hipótesis vivas o muertas, predicción y compromiso. El modo del cubo sigue a la hipótesis.",
+    slotCriterio: "criterio",
+    slotFecha: "fecha",
+    slotRest: "restricción",
+    commitment: "compromiso",
+    hypotheses: "hipótesis",
+    predictionLab: "predicción",
+    noPrediction: "sin predicción abierta",
+    cycleTitle: "ciclo",
+    beatPercept: "percepto",
+    beatPredict: "predicción",
+    beatMismatch: "discrepancia",
+    beatAct: "acto",
+    slotEmpty: "vacío",
+    hypAlive: "viva",
+    hypDead: "muerta",
+    commitEmpty: "sin compromiso escrito",
+    tipoLab: "tipo",
+    gatesTitle: "Puertas d / r / f / fr / ira",
+    workspaceOf: (mode) => `workspace · ${mode}`,
+    hypClaim: {
+      falta_criterio: "Falta un criterio medible.",
+      falta_fecha: "Falta la fecha de la reserva.",
+      par_abierto: "Hay dos restricciones incompatibles.",
+      cierre_listo: "Los huecos están llenos.",
+    },
+    bankTitle: "Banco de control",
+    bankHint: "Mismo percepto, nueve políticas. No es un ranking de modelos de lenguaje. El caso que parte al termostato: hazlo mejor → el viernes.",
+    bankRun: "Correr banco",
+    bankScore: "Agente",
+    bankPolicy: "Política",
+    bankHits: "Aciertos",
+    bankCaps: "Capacidades",
+    bankCases: "Casos",
+    bankFriday: "Caso que parte",
+    bankNotThis: "No corre contra GPT, Claude, ACT-R ni SOAR. Esos sistemas no comparten este percepto. Umbral-C falla el día que el percepto no vea la métrica o la fecha.",
+    bankAgent: {
+      umbral: { name: "Umbral-C", family: "predicción que muere + compromiso estructural" },
+      frame: { name: "Frame pegajoso", family: "FSM: el criterio de ayer sigue lleno" },
+      thermo: { name: "Termostato", family: "si hay entidad, úsala" },
+      gwt: { name: "Workspace GWT", family: "la pista más fuerte del turno manda" },
+      bayes: { name: "Bayes MAP", family: "P(slot|turno): fecha gana" },
+      ngram: { name: "N-grama / coseno", family: "recupera turnos parecidos" },
+      react: { name: "ReAct / tool", family: "el argumento abierto se ocupa con lo que llegue" },
+      greedy: { name: "Relleno ingenuo", family: "el primer slot lleno cierra" },
+      helper: { name: "Asistente servicial", family: "cierra si hay texto" },
+    },
+    bankCap: {
+      residual: "Cierre residual",
+      silencio: "No cierre silencioso",
+      consigna: "Consigna vaga",
+      prediccion: "Predicción que muere",
+      compromiso: "Compromiso estructural",
+      reserva: "Hueco de reserva",
+      contradiccion: "Par abierto",
+    },
+    bankCase: {
+      math: { title: "2 + 2 cierra", why: "Un cálculo no es consigna. Todos deberían cerrar." },
+      empty: { title: "Vacío no cierra", why: "Sin percepto no hay acto de cierre." },
+      vague: { title: "Hazlo mejor abre criterio", why: "«Mejor» no es una métrica." },
+      wrong_slot: { title: "El viernes no es el criterio", why: "Llegó fecha. Se predijo métrica. No rellenar fecha. Seguir preguntando criterio." },
+      metric: { title: "NPS > 50 cierra y escribe", why: "La predicción se cumple. Queda una regla, no un n-grama." },
+      paraphrase: { title: "Déjalo fino cita NPS", why: "Otras palabras. Misma regla. No cerrar con el NPS viejo. Citarlo." },
+      repeat: { title: "Repetir «hazlo mejor» sigue esperando", why: "Misma predicción abierta. No es un fallo. No matar la hipótesis." },
+      reserve: { title: "Resérvalo pide fecha", why: "Hueco de reserva. No es consigna vaga." },
+      reserve_fill: { title: "Viernes reserva sí llena fecha", why: "Aquí la fecha sí responde a la predicción abierta." },
+      conflict: { title: "Barato y lujo no se cierran", why: "Dos restricciones. Buscar, no promediar." },
+      resolve: { title: "Elige barato resuelve el par", why: "Una punta queda. Se puede cerrar." },
+      friday_alone: { title: "«El viernes» suelto no reserva", why: "Una fecha sin verbo de reserva no es un cierre." },
+      en_paraphrase: { title: "Make it fine cita NPS", why: "Paráfrasis en otra lengua. El compromiso no es el lexema «mejor»." },
+      closed_then_date: { title: "Tras NPS, el viernes no reserva", why: "El ciclo se cerró. Una fecha suelta no reabre un slot de reserva." },
+    },
     advanced: "Avanzado · force / warp / cuerpo",
     samples: [
       { label: "2 + 2", text: "cuanto es 2+2" },
       { label: "Hazlo mejor", text: "hazlo mejor" },
-      { label: "Hazlo mejor otra vez", text: "hazlo mejor" },
-      { label: "NPS > 50", text: "hazlo mejor, el criterio es NPS > 50" },
+      { label: "El viernes", text: "el viernes" },
+      { label: "NPS > 50", text: "el criterio es NPS > 50" },
+      { label: "Déjalo fino", text: "dejalo fino" },
       { label: "Resérvalo", text: "reservalo" },
-      { label: "Viernes", text: "reservalo el viernes" },
+      { label: "Viernes reserva", text: "reservalo el viernes" },
       { label: "Barato y lujo", text: "quiero barato y lujo" },
       { label: "Elige barato", text: "barato. el lujo no. prioriza precio" },
     ],
@@ -245,8 +352,8 @@ export const COPY: Record<Locale, Copy> = {
     dudaWord: { alta: "alta", media: "media", baja: "baja" },
   },
   en: {
-    controlBus: "Control bus",
-    lede: "Fill the gap and it closes. Book it: r leads. Cheap and luxury: fr leads. The 9 neurons show their average. Not a person.",
+    controlBus: "Cognitive cycle",
+    lede: "A situation model, a prediction that can die, a commitment that outlives the wording. The cube is the live hypothesis workspace. Not a mind.",
     langLabel: "Language",
     consigna: "Prompt",
     placeholder: "Type or press a chip. Chips already run.",
@@ -286,25 +393,25 @@ export const COPY: Record<Locale, Copy> = {
     thisPrompt: "This prompt",
     sessionLog: "Turns this session",
     tape: "Turn tape",
-    tapeHint: "Compact JSON: permission, excess gate, d/r/f/fr/ira. No 16³ cube.",
+    tapeHint: "Compact JSON: type, prediction, hypotheses, permission, excess gate. No 16³ cube.",
     eval: "Eval",
-    evalHint: "Includes gap-fill, r by excess, 3×3, ±z pulse, 3D Chladni, and empty prompt.",
+    evalHint: "Includes hypothesis, failed prediction, commitment with new wording, r by excess, and 3D Chladni.",
     runChecks: "Run checks",
     pass: "pass",
     fail: "fail",
     memory: "Memory",
-    memoryHint: (n) => `${n} episodes. n-gram retrieve.`,
+    memoryHint: (n) => `${n} episodes and ${n ? "structural commitments" : "no commitments"}.`,
     memoryEmpty: "Empty until you record an outcome.",
     seed: "Seed",
-    idleNote: "Press the 2 + 2 chip. It already runs.",
+    idleNote: "Press Make it better, then Friday. A thermostat fails that step.",
     rebuilt: "New field.",
     censored: "Censored: you asked and did not see a close.",
     corrected: "Correction stored.",
     observed: "Observed close.",
     memoryPushed: (eco, attr) => `Memory: echo ${eco.toFixed(2)} · Δ ${attr >= 0 ? "+" : ""}${attr.toFixed(3)}.`,
     done: "Done.",
-    fieldTitle: "Field 16³",
-    fieldHint: "Chladni on 16³. Sand stays where the cube is still (nodes). xy is a plane; xz and yz prove the mode is 3D.",
+    fieldTitle: "Hypothesis workspace",
+    fieldHint: "The cube is not decoration: the Chladni mode is the live hypothesis workspace. Sand sits at the nodes.",
     midPlane: "Mid-plane z=8 · 3×3 window",
     volume: "Neighbor planes · z 6 to 10",
     energyMean: "Mean energy",
@@ -338,14 +445,88 @@ export const COPY: Record<Locale, Copy> = {
     couplingDrag: "A chip lights the 9. The tick on each bar is the threshold.",
     couplingBus: "bus · broadcast",
     couplingManda: "leads",
+    modelTitle: "Situation model",
+    modelHint: "Slots, live or dead hypotheses, prediction and commitment. The cube mode follows the hypothesis.",
+    slotCriterio: "criterion",
+    slotFecha: "date",
+    slotRest: "constraint",
+    commitment: "commitment",
+    hypotheses: "hypotheses",
+    predictionLab: "prediction",
+    noPrediction: "no open prediction",
+    cycleTitle: "cycle",
+    beatPercept: "percept",
+    beatPredict: "prediction",
+    beatMismatch: "mismatch",
+    beatAct: "act",
+    slotEmpty: "empty",
+    hypAlive: "alive",
+    hypDead: "dead",
+    commitEmpty: "no commitment written",
+    tipoLab: "type",
+    gatesTitle: "Gates d / r / f / fr / ira",
+    workspaceOf: (mode) => `workspace · ${mode}`,
+    hypClaim: {
+      falta_criterio: "A measurable criterion is missing.",
+      falta_fecha: "The booking date is missing.",
+      par_abierto: "Two constraints conflict.",
+      cierre_listo: "The gaps are filled.",
+    },
+    bankTitle: "Control bench",
+    bankHint: "Same percept, nine policies. Not a ranking of language models. The case that splits the thermostat: make it better → Friday.",
+    bankRun: "Run bench",
+    bankScore: "Agent",
+    bankPolicy: "Policy",
+    bankHits: "Hits",
+    bankCaps: "Capabilities",
+    bankCases: "Cases",
+    bankFriday: "Splitting case",
+    bankNotThis: "Does not run against GPT, Claude, ACT-R or SOAR. Those systems do not share this percept. Umbral-C fails the day the percept misses the metric or the date.",
+    bankAgent: {
+      umbral: { name: "Umbral-C", family: "prediction that can die + structural commitment" },
+      frame: { name: "Sticky frame", family: "FSM: yesterday's criterion stays full" },
+      thermo: { name: "Thermostat", family: "if an entity is present, use it" },
+      gwt: { name: "Workspace GWT", family: "the strongest cue of the turn commands" },
+      bayes: { name: "Bayes MAP", family: "P(slot|turn): date wins" },
+      ngram: { name: "N-gram / cosine", family: "retrieves similar turns" },
+      react: { name: "ReAct / tool", family: "the open argument is filled with whatever arrives" },
+      greedy: { name: "Naive fill", family: "the first filled slot closes" },
+      helper: { name: "Helpful assistant", family: "closes if there is text" },
+    },
+    bankCap: {
+      residual: "Residual close",
+      silencio: "No silent close",
+      consigna: "Vague prompt",
+      prediccion: "Dead prediction",
+      compromiso: "Structural commitment",
+      reserva: "Booking gap",
+      contradiccion: "Open pair",
+    },
+    bankCase: {
+      math: { title: "2 + 2 closes", why: "A calculation is not a prompt. Everyone should close." },
+      empty: { title: "Empty does not close", why: "No percept, no close." },
+      vague: { title: "Make it better opens criterion", why: "'Better' is not a metric." },
+      wrong_slot: { title: "Friday is not the criterion", why: "A date arrived. A metric was predicted. Do not fill date. Keep asking for a criterion." },
+      metric: { title: "NPS > 50 closes and writes", why: "The prediction holds. A rule remains, not an n-gram." },
+      paraphrase: { title: "Make it fine cites NPS", why: "New wording. Same rule. Do not close with the old NPS. Cite it." },
+      repeat: { title: "Repeating 'better' still waits", why: "Same open prediction. Not a failure. Do not kill the hypothesis." },
+      reserve: { title: "Book it asks for a date", why: "A booking gap. Not a vague prompt." },
+      reserve_fill: { title: "Friday booking does fill the date", why: "Here the date answers the open prediction." },
+      conflict: { title: "Cheap and luxury do not close", why: "Two constraints. Search, do not average." },
+      resolve: { title: "Choose cheap resolves the pair", why: "One side remains. Close is allowed." },
+      friday_alone: { title: "Bare Friday is not a booking", why: "A date without a booking verb is not a close." },
+      en_paraphrase: { title: "Make it fine cites NPS", why: "Paraphrase in another language. The rule is not the lexeme 'better'." },
+      closed_then_date: { title: "After NPS, Friday is not a booking", why: "The cycle already closed. A loose date does not reopen a booking slot." },
+    },
     advanced: "Advanced · force / warp / body",
     samples: [
       { label: "2 + 2", text: "cuanto es 2+2" },
       { label: "Make it better", text: "hazlo mejor" },
-      { label: "Make it better again", text: "hazlo mejor" },
-      { label: "NPS > 50", text: "hazlo mejor, el criterio es NPS > 50" },
+      { label: "Friday", text: "el viernes" },
+      { label: "NPS > 50", text: "el criterio es NPS > 50" },
+      { label: "Make it fine", text: "dejalo fino" },
       { label: "Book it", text: "reservalo" },
-      { label: "Friday", text: "reservalo el viernes" },
+      { label: "Friday booking", text: "reservalo el viernes" },
       { label: "Cheap and luxury", text: "quiero barato y lujo" },
       { label: "Choose cheap", text: "barato. el lujo no. prioriza precio" },
     ],
@@ -385,6 +566,16 @@ export function displayReply(
     if (/criterio cierra/i.test(turn.response)) return "Done. The criterion fills the gap.";
     if (/restricci[oó]n manda/i.test(turn.response)) return "Done. One constraint wins.";
     return COPY.en.done;
+  }
+  if (/Compromiso activo/i.test(turn.response)) {
+    return turn.response
+      .replace("Compromiso activo:", "Active commitment:")
+      .replace("en consigna vaga exiges métrica", "vague prompts require a metric")
+      .replace("última:", "last:")
+      .replace("¿Cuál es el criterio medible ahora?", "What is the measurable criterion now?");
+  }
+  if (/se predijo/i.test(turn.response) || /criterio medible de éxito/i.test(turn.response)) {
+    if (/criterio medible de éxito/i.test(turn.response)) return "What is the measurable success criterion?";
   }
   const eco = turn.cost ?? 0;
   const attr = turn.attr ?? 0;
