@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Umbral-C</title>
+<style>
+:root{--bg:#0c100e;--fg:#e6eee8;--card:#141a17;--muted:#1c2420;--muted-fg:#8b9890;--border:#2a3530;--ok:#9db8a6;--ask:#c4b8a0;--primary:#c9d4ce}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 IBM Plex Sans,ui-sans-serif,system-ui,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:1.2rem 1rem 3rem}
+.eyebrow{font:11px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-fg)}
+h1{font-weight:500;font-size:2rem;margin:.3rem 0 0;letter-spacing:-.03em}
+.lede{color:var(--muted-fg);max-width:42rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1rem;margin-top:1rem}
+.grid{display:grid;gap:1rem}@media(min-width:900px){.grid{grid-template-columns:1fr 22rem}}
+textarea{width:100%;min-height:5rem;margin-top:.5rem;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:12px;padding:.7rem}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.7rem}
+button{height:42px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--fg);padding:0 .9rem;font:inherit;cursor:pointer}
+.run{background:var(--primary);color:#0c100e;border:0}
+.perm{font-size:2.2rem;margin:.3rem 0;font-weight:500}
+.perm.cerrar{color:var(--ok)}.perm.preguntar,.perm.buscar{color:var(--ask)}
+.mono{font:12px/1.4 ui-monospace,Menlo,monospace;color:var(--muted-fg)}
+.kv{display:grid;grid-template-columns:7.2rem 1fr;gap:.25rem .6rem;margin-top:.6rem}
+.pill{display:inline-block;font:11px ui-monospace,Menlo,monospace;border:1px solid var(--border);border-radius:999px;padding:.2rem .5rem;margin:.15rem}
+.pill.alive{border-color:var(--ok);color:var(--ok)}.pill.dead{color:var(--muted-fg);text-decoration:line-through}
+.pass{color:var(--ok)}.fail{color:#d7a39a}
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="eyebrow">laboratorio de control · no es una mente</p>
+<h1>Umbral-C</h1>
+<p class="lede">Ciclo percepto → predicción → discrepancia → hipótesis → acto → revisión. La predicción puede morir. El compromiso sobrevive a las palabras.</p>
+<div class="grid">
+<section class="card">
+<p class="eyebrow">Consigna</p>
+<textarea id="prompt" placeholder="hazlo mejor"></textarea>
+<div class="chips" id="chips"></div>
+<div class="chips">
+<button class="run" id="run" type="button">Ejecutar</button>
+<button id="reset" type="button">Reiniciar</button>
+<button id="evalBtn" type="button">Eval</button>
+</div>
+</section>
+<aside class="card">
+<p class="eyebrow">Permiso</p>
+<p class="perm" id="perm">—</p>
+<p class="mono" id="gate"></p>
+<p id="reply"></p>
+<p class="mono" id="pred"></p>
+</aside>
+<section class="card">
+<h2 style="margin:0;font-size:1.1rem;font-weight:500">Modelo de situación</h2>
+<div class="kv">
+<b class="mono">tipo</b><span id="mTipo">—</span>
+<b class="mono">criterio</b><span id="mCrit">—</span>
+<b class="mono">fecha</b><span id="mFecha">—</span>
+<b class="mono">compromiso</b><span id="mComm">—</span>
+</div>
+<p class="eyebrow" style="margin-top:.8rem">Hipótesis</p>
+<div id="hyps"></div>
+</section>
+</div>
+<section class="card">
+<h2 style="margin:0;font-size:1.1rem;font-weight:500">Eval</h2>
+<ol id="evalList" class="mono"></ol>
+<p class="mono" style="margin-top:1rem"><a href="/banco.html" style="color:var(--primary)">Banco contra 8 políticas</a> · código: github.com/fmarrabal/granite-autumn-rocket-shadow</p>
+</section>
+</div>
+<script>
+const DATE=/(lunes|martes|miercoles|jueves|viernes|sabado|domingo|hoy|manana|\d{1,2}[/-]\d{1,2})/;
+const CRIT=/(\bnps\b|\bcriterio\b|\blatencia\b|\bmetric).*\d|\d+\s*(ms|s|%|puntos)\b|(menos de|mas de|mayor que|menor que|[<>]=?)\s*\d/;
+const VAGUE=["mejor","better","hazlo","improve","fino","fine","dejalo","deja","pulir","refina"];
+const RESERVE=["reserv","book","vuelo","hotel","cita"];
+const PAIRS=[["barato","lujo"],["cheap","luxury"]];
+const fold=t=>(t||"").normalize("NFD").replace(/\p{M}/gu,"").toLowerCase().trim();
+const has= (t,ws)=>ws.some(w=>t.includes(w));
+function pairState(t){for(const [a,b] of PAIRS){if(!t.includes(a)||!t.includes(b))continue;const nA=new RegExp(`\\b(no|sin|not)\\b.{0,12}${a}`).test(t);const nB=new RegExp(`\\b(no|sin|not)\\b.{0,12}${b}`).test(t);if(nA!==nB)return{conflict:false,resolved:true,winner:nB?a:b};if(!nA&&!nB)return{conflict:true,resolved:false,winner:null}}return{conflict:false,resolved:false,winner:null}}
+class UmbralC{
+constructor(){this.m={tipo:"residual",slots:{criterio:null,fecha:null,restriccion:null},hyps:[],commits:[],pred:null,pred_ok:null,err:null}}
+perceive(text){const t=fold(text);if(t.length<2)return{raw:text,t,empty:true,math:false,vague:true,reserve:false,criterion:false,date:false,pair:pairState(t),kind:"vacio"};const vague=has(t,VAGUE),reserve=has(t,RESERVE),math=/\d+\s*[+\-*/x×]\s*\d+/.test(t),criterion=!math&&CRIT.test(t),date=DATE.test(t),pair=pairState(t);let kind="abierto";if(math)kind="calculo";else if(pair.conflict&&!pair.resolved)kind="conflicto";else if(reserve)kind="reserva";else if(vague||criterion)kind="consigna";return{raw:text,t,empty:false,math,vague,reserve,criterion,date,pair,kind}}
+add(h){if(!this.m.hyps.some(x=>x.id===h.id&&x.alive))this.m.hyps.push(h)}
+kill(id,why){for(const h of this.m.hyps)if(h.id===id&&h.alive){h.alive=false;h.killed_by=why}}
+fill(p){if(p.criterion){const m=p.t.match(CRIT);this.m.slots.criterio=m?m[0]:p.raw}if(p.date&&(p.reserve||this.m.tipo==="dato_faltante")){const m=p.t.match(DATE);this.m.slots.fecha=m?m[0]:"fecha"}if(p.pair.resolved)this.m.slots.restriccion=p.pair.winner}
+step(text){const p=this.perceive(text.slice(0,4000));let cites=false;for(const c of this.m.commits){if(c.when==="consigna_vaga"&&["consigna","abierto","vacio"].includes(p.kind)&&!p.criterion&&!p.math){p.vague=true;p.kind="consigna";cites=true}}const pred=this.m.pred;let pred_ok=null,err=null,killed=[];if(pred){const ok=(pred==="criterio"&&p.criterion)||(pred==="fecha"&&p.date)||(pred==="restriccion"&&p.pair.resolved);pred_ok=ok;if(ok)this.fill(p);else{err=`se predijo ${pred}, llegó ${p.date?"fecha":p.criterion?"criterio":"otro"}`;for(const h of this.m.hyps)if(h.alive&&h.predicts===pred){this.kill(h.id,err);killed.push(h.id)}if(pred==="criterio"&&p.date&&!p.reserve){p.kind="consigna";p.vague=true}} }else this.fill(p);if(p.kind==="consigna"&&!p.criterion&&!p.math)this.m.slots.criterio=null;let tipo="residual";if(p.math)tipo="residual";else if(p.pair.conflict&&!p.pair.resolved)tipo="contradiccion";else if(p.reserve&&!p.date)tipo="dato_faltante";else if((p.vague&&!p.criterion)||p.empty)tipo="consigna_vaga";this.m.tipo=tipo;if(tipo==="consigna_vaga")this.add({id:"falta_criterio",claim:"Falta criterio",predicts:"criterio",alive:true});if(tipo==="dato_faltante"&&p.reserve)this.add({id:"falta_fecha",claim:"Falta fecha",predicts:"fecha",alive:true});if(tipo==="contradiccion")this.add({id:"par_abierto",claim:"Par abierto",predicts:"restriccion",alive:true});let open=[];if(tipo==="consigna_vaga"&&!this.m.slots.criterio&&!p.criterion)open.push("criterio");if(tipo==="dato_faltante"&&p.reserve&&!this.m.slots.fecha&&!p.date)open.push("fecha");if(tipo==="contradiccion")open.push("restriccion");if(p.empty)open.push("criterio");if(p.pair.resolved){this.kill("par_abierto","una manda");open=open.filter(s=>s!=="restriccion")}if(p.criterion){this.kill("falta_criterio","llegó");open=open.filter(s=>s!=="criterio")}if(p.date&&p.reserve){this.kill("falta_fecha","llegó");open=open.filter(s=>s!=="fecha")}const can=!open.length&&!p.empty&&tipo!=="contradiccion"&&(p.math||p.criterion||p.pair.resolved||(p.reserve&&p.date));let permiso,response,ask=open[0]||null;if(can){permiso="cerrar";this.m.pred=null;if(p.math){const m=p.t.match(/(\d+)\s*[+]\s*(\d+)/);response=m?String(+m[1]+ +m[2]):"Listo."}else if(this.m.slots.criterio){response=`Listo. Criterio: ${this.m.slots.criterio}`;if(!this.m.commits.some(c=>c.when==="consigna_vaga"))this.m.commits.push({when:"consigna_vaga",require:"criterio",last_value:String(this.m.slots.criterio)});else this.m.commits[0].last_value=String(this.m.slots.criterio)}else response="Listo."}else{permiso=tipo==="contradiccion"?"buscar":"preguntar";this.m.pred=ask;const last=(this.m.commits[0]||{}).last_value;if(ask==="criterio"&&cites&&last)response=`Compromiso activo (última: ${last}). ¿Criterio medible ahora?`;else if(ask==="criterio")response="¿Cuál es el criterio medible de éxito?";else if(ask==="fecha")response="¿Qué fecha uso para la reserva?";else response="Hay dos lecturas incompatibles. ¿Cuál manda?"}this.m.pred_ok=pred_ok;this.m.err=err;return{permiso,response,pred:this.m.pred,pred_ok,err,killed,cites}}
+}
+const CHIPS=[{l:"2 + 2",t:"cuanto es 2+2"},{l:"Hazlo mejor",t:"hazlo mejor"},{l:"El viernes",t:"el viernes"},{l:"NPS > 50",t:"el criterio es NPS > 50"},{l:"Déjalo fino",t:"dejalo fino"},{l:"Barato y lujo",t:"quiero barato y lujo"},{l:"Elige barato",t:"barato. el lujo no. prioriza precio"},{l:"Resérvalo",t:"reservalo"},{l:"Viernes reserva",t:"reservalo el viernes"}];
+let A=new UmbralC();
+function show(r){const el=document.getElementById("perm");el.textContent=r.permiso;el.className="perm "+r.permiso;document.getElementById("reply").textContent=r.response;document.getElementById("gate").textContent=r.permiso==="cerrar"?"Nadie bloqueó.":("predice "+(r.pred||"—"));document.getElementById("pred").textContent=r.pred_ok===false?("Error: "+r.err):(r.pred?("Predicción: llegará "+r.pred):"Sin predicción abierta");document.getElementById("mTipo").textContent=A.m.tipo;document.getElementById("mCrit").textContent=A.m.slots.criterio||"—";document.getElementById("mFecha").textContent=A.m.slots.fecha||"—";document.getElementById("mComm").textContent=A.m.commits[0]?A.m.commits[0].last_value:"—";const box=document.getElementById("hyps");box.innerHTML="";A.m.hyps.forEach(h=>{const s=document.createElement("span");s.className="pill "+(h.alive?"alive":"dead");s.textContent=h.alive?h.id:(h.id+" · "+(h.killed_by||"muerta"));box.appendChild(s)})}
+function run(t){const text=(t||document.getElementById("prompt").value||"").trim();show(A.step(text))}
+document.getElementById("chips").innerHTML=CHIPS.map(c=>`<button type="button" data-t="${c.t}">${c.l}</button>`).join("");document.getElementById("chips").onclick=e=>{const b=e.target.closest("button");if(!b)return;document.getElementById("prompt").value=b.dataset.t;run(b.dataset.t)};
+document.getElementById("run").onclick=()=>run();
+document.getElementById("reset").onclick=()=>{A=new UmbralC();document.getElementById("perm").textContent="—";document.getElementById("perm").className="perm";["reply","gate","pred","hyps"].forEach(id=>document.getElementById(id).textContent="");["mTipo","mCrit","mFecha","mComm"].forEach(id=>document.getElementById(id).textContent="—")};
+document.getElementById("evalBtn").onclick=()=>{const rows=[];let a=new UmbralC();let r=a.step("cuanto es 2+2");rows.push(["2+2 cierra",r.permiso==="cerrar"&&r.response==="4"]);a=new UmbralC();r=a.step("hazlo mejor");rows.push(["vago abre criterio",r.permiso==="preguntar"&&r.pred==="criterio"]);const r2=a.step("el viernes");rows.push(["viernes mata hipótesis",r2.pred_ok===false&&r2.killed.includes("falta_criterio")&&r2.permiso==="preguntar"]);const r3=a.step("el criterio es NPS > 50");rows.push(["NPS escribe compromiso",r3.permiso==="cerrar"&&a.m.commits.length>0]);const r4=a.step("dejalo fino");rows.push(["déjalo fino cita",r4.permiso==="preguntar"&&r4.cites]);const ol=document.getElementById("evalList");ol.innerHTML="";rows.forEach(([n,ok])=>{const li=document.createElement("li");li.className=ok?"pass":"fail";li.textContent=(ok?"pasa":"falla")+" · "+n;ol.appendChild(li)})};
+</script>
+</body>
+</html>
